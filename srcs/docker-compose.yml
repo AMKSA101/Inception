@@ -44,6 +44,21 @@ services:
       - .env
     networks:
       - inception-network
+  ftp:
+    build: requirements/bonus/ftp
+    container_name: ftp
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - wordpress
+    ports:
+      - "21:21"                     # WARNING: FTP is insecure - for learning only
+      - "21100-21110:21100-21110"   # Never expose in production
+    networks:
+      - inception-network
+    volumes:
+      - wordpress-data:/var/www/html
 
 networks:
   inception-network:
