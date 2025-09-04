@@ -30,12 +30,17 @@ services:
     restart: always
     depends_on:
       - wordpress
+      - adminer
     ports:
       - "443:443"
+      - "8080:8080"  # Added for direct access to static website
+      - "8081:8081"  # Added for direct access to adminer
     networks:
       - inception-network
     volumes:
       - wordpress-data:/var/www/html
+      - static-site-data:/var/www/static-site
+      - adminer-data:/var/www/adminer
   redis:
     build: requirements/bonus/redis
     container_name: redis
@@ -59,6 +64,28 @@ services:
       - inception-network
     volumes:
       - wordpress-data:/var/www/html
+  static-website:
+    build: requirements/bonus/static-website
+    container_name: static-website
+    restart: always
+    depends_on:
+      - nginx
+      - wordpress
+    networks:
+      - inception-network
+    volumes:
+      - static-site-data:/var/www/static-site
+      
+  adminer:
+    build: requirements/bonus/adminer
+    container_name: adminer
+    restart: always
+    depends_on:
+      - mariadb
+    networks:
+      - inception-network
+    volumes:
+      - adminer-data:/var/www/adminer
 
 networks:
   inception-network:
@@ -68,5 +95,9 @@ volumes:
   mariadb-data:
     driver: local
   wordpress-data:
+    driver: local
+  static-site-data:
+    driver: local
+  adminer-data:
     driver: local
 

@@ -13,8 +13,8 @@ RUN openssl req -x509 -nodes -out /etc/ssl/certs/nginx-selfsigned.crt \
 # Copy our custom NGINX configuration
 COPY conf/nginx.conf /etc/nginx/sites-available/default
 
-# Expose HTTPS port
-EXPOSE 443
+# Expose HTTPS port, static website port, and adminer port
+EXPOSE 443 8080 8081
 
 # Start NGINX in foreground
 CMD ["nginx", "-g", "daemon off;"]
