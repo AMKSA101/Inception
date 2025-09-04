@@ -1,17 +1,38 @@
 #!/bin/bash
-echo "Starting FTP server setup..."
 
-if id "$FTP_USER" &>/dev/null; then
-	echo "user $FTP_USER already exists!"
-else
-	echo "Adding a user $FTP_USER"
-	useradd -m -d /var/www/html -s /bin/bash "$FTP_USER"
+# Exit on error
+set -e
+
+# Environment variables needed:
+# FTP_USER: Username for ftp access
+# FTP_PASSWORD: Password for FTP access
+
+# Check if environment variables are set
+if [ -z "$FTP_USER" ] || [ -z "$FTP_PASSWORD" ]; then
+	echo "Error: FTP_USER and FTP_PASSWORD environment varialbles must be set"
+	exit 1
+fi
+
+# Create the FTP user if it doesn't exist
+if ! id -u "$FTP_USER" &>/dev/null; then
+	adduser --disabled-password --gecos "" "$FTP_USER"
 	echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
 fi
 
-mkdir -p /var/www/html
-chown $FTP_USER:$FTP_USER /var/www/html
-chmod 755 /var/www/html
+# ADD user to www-data group (to access Wordpress files)
+usermod -aG www-data "$FTP_USER"
 
-echo "FTP server setup completed!"
+# Make sure Wordpress directory exists and set permissions
+if [ ! -d /var/www/html ]; then
+	mkdir -p /var/www/html
+fi
+
+# Set correct permissions
+chown -R "$FTP_USER":www-data /var/www/html
+
+# Log message
+echo "FTP server is ready with user: $FTP_USER"
+echo "Mounted Wordpress directory at: /var/www/html"
+
+# Execute the command passed to the script
 exec "$@"
