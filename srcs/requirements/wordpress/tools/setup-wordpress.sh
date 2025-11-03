@@ -51,12 +51,13 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
     
     # WORDPRESS INSTALLATION: Set up WordPress with initial content
     # Creates the admin user and configures basic site settings
+    # Note: Username must not contain 'admin', 'Admin', 'administrator', or 'Administrator'
     wp core install \
-        --url="$DOMAIN_NAME" \
+        --url="https://$DOMAIN_NAME" \
         --title="Inception WordPress" \
-        --admin_user="admin" \
-        --admin_password="admin123" \
-        --admin_email="admin@$DOMAIN_NAME" \
+        --admin_user="abamksa" \
+        --admin_password="secure_pass_123" \
+        --admin_email="abamksa@$DOMAIN_NAME" \
         --allow-root
 	
     wp plugin install redis-cache --activate

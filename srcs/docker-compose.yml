@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mariadb:
     build: requirements/mariadb
@@ -33,8 +31,6 @@ services:
       - adminer
     ports:
       - "443:443"
-      - "8080:8080"  # Added for direct access to static website
-      - "8081:8081"  # Added for direct access to adminer
     networks:
       - inception-network
     volumes:
@@ -57,9 +53,6 @@ services:
       - .env
     depends_on:
       - wordpress
-    ports:
-      - "21:21"                     # WARNING: FTP is insecure - for learning only
-      - "21100-21110:21100-21110"   # Never expose in production
     networks:
       - inception-network
     volumes:
@@ -76,6 +69,16 @@ services:
     volumes:
       - static-site-data:/var/www/static-site
       
+  portainer:
+    build: requirements/bonus/portainer
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - inception-network
+
   adminer:
     build: requirements/bonus/adminer
     container_name: adminer
@@ -94,10 +97,20 @@ networks:
 volumes:
   mariadb-data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/joker/data/mariadb
   wordpress-data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/joker/data/wordpress
   static-site-data:
     driver: local
   adminer-data:
+    driver: local
+  portainer-data:
     driver: local
 
