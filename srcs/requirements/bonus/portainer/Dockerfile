@@ -1,71 +1,39 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Dockerfile                                         :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: your_username <your_email@student.42>     +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/11/01                           #+#    #+#                  #
-#    Updated: 2025/11/01                          ###   ########.fr            #
-#                                                                              #
-# **************************************************************************** #
+FROM debian:bullseye
 
-# # TODO: Choose the base image
-# # Hint: We'll use Alpine Linux for a lightweight container
-# # Alpine is perfect because Portainer provides a pre-built binary for it
-# FROM alpine:3.19
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
 
-# # TODO: Install necessary packages
-# # Hint: Portainer needs 'ca-certificates' for HTTPS connections
-# RUN apk update && apk add --no-cache \
-# 	ca-certificates \
-# 	curl \
-# 	&& rm -rf /var/cache/apk/*
+# Install Docker CLI
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    rm -rf /var/lib/apt/lists/*
 
-# # TODO: Download Portainer binary
-# # Hint: Get it from GitHub releases - portainer-ce (Community Edition)
-# # URL pattern: https://github.com/portainer/portainer/releases/download/VERSION/portainer-linux-amd64.tar.gz
-# RUN curl -L https://github.com/portainer/portainer/releases/download/2.19.4/portainer-linux-amd64.tar.gz | tar -xz -C /tmp \
-# 	&& mv /tmp/portainer/portainer /usr/local/bin \
-# 	&& chmod +x /usr/local/bin/portainer \
-# 	&& rm -rf /tmp/portainer
+# Install docker-compose
+RUN curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose
 
-# # TODO: Create a directory for Portainer data
-# # Hint: Portainer stores its database in /data
-# RUN mkdir -p /data
+# Download and install Portainer with web assets
+RUN curl -L https://github.com/portainer/portainer/releases/download/2.9.3/portainer-2.9.3-linux-amd64.tar.gz -o portainer.tar.gz && \
+    tar xzf portainer.tar.gz -C /tmp && \
+    mv /tmp/portainer /usr/local/ && \
+    chmod +x /usr/local/portainer/portainer && \
+    ln -s /usr/local/portainer/portainer /usr/local/bin/portainer && \
+    rm portainer.tar.gz
 
-# # TODO: Expose the web interface port
-# # Hint: Portainer uses port 9000 for HTTP and 9443 for HTTPS
-# EXPOSE 9443
+# Create data directory
+RUN mkdir -p /data
 
-# # TODO: Set the startup command
-# # Hint: Run /portainer with the appropriate flags
-# # Use --bind :9443 for HTTPS and --ssl for secure connections
-# CMD ["/usr/local/bin/portainer", "--bind", ":9443", "--ssl"]
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+EXPOSE 9000 9443
 
-# PORTAINER CE (Community Edition) - Docker Management UI
-# Using official Alpine-based Portainer image for reliability
-# This is the RECOMMENDED approach over manual binary downloads
-FROM portainer/portainer-ce:2.19.4-alpine
+ENV DOCKER_CONFIG=/root/.docker
 
-# EXPLANATION: Why use the official image?
-# 1. Pre-built and tested by Portainer team
-# 2. Includes all dependencies and proper configuration
-# 3. Regular security updates
-# 4. Smaller final image size
-# 5. No need to manually download/extract binaries
+WORKDIR /usr/local/portainer
 
-# The official image already:
-# - Exposes port 9443 (HTTPS) and 9000 (HTTP)
-# - Creates /data directory for persistent storage
-# - Sets up the correct entrypoint
-# - Includes CA certificates
-
-# We just need to ensure volumes are mounted:
-# - /var/run/docker.sock for Docker API access
-# - /data for persistent configuration
-
-# No additional configuration needed!
-# The CMD is already set in the base image
-
+CMD ["/usr/local/bin/portainer"]

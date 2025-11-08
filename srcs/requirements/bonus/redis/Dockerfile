@@ -1,21 +1,23 @@
 FROM debian:bullseye
 
-# Packages installation
-RUN apt update -y && apt install -y redis-server \
-	&& apt autoremove -y && apt clean && \
-	rm -rf /var/lib/apt/lists/*
+# Install Redis
+RUN apt-get update && apt-get install -y \
+    redis-server \
+    && rm -rf /var/lib/apt/lists/*
 
+# Create Redis user and group
 RUN addgroup --system redisgroup && \
-	adduser --system --ingroup redisgroup redisuser
+    adduser --system --ingroup redisgroup redisuser
 
-EXPOSE 6379
-
+# Create config directory
 RUN mkdir -p /usr/local/etc/redis
 
+# Copy configuration
 COPY conf/redis.conf /usr/local/etc/redis/redis.conf
-
 RUN chown redisuser:redisgroup /usr/local/etc/redis/redis.conf
 
 USER redisuser
+
+EXPOSE 6379
 
 CMD ["sh", "-c", "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$REDIS_PASSWORD\""]

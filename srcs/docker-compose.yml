@@ -4,116 +4,123 @@ services:
     container_name: mariadb
     restart: always
     env_file: .env
-    networks:
-      - inception-network
     volumes:
-      - mariadb-data:/var/lib/mysql
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
   wordpress:
     build: requirements/wordpress
     container_name: wordpress
     restart: always
     env_file: .env
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
     depends_on:
       - mariadb
       - redis
-    networks:
-      - inception-network
-    volumes:
-      - wordpress-data:/var/www/html
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DOMAIN_NAME: ${DOMAIN_NAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   nginx:
     build: requirements/nginx
     container_name: nginx
     restart: always
+    env_file: .env
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
     depends_on:
       - wordpress
       - adminer
-    ports:
-      - "443:443"
-    networks:
-      - inception-network
-    volumes:
-      - wordpress-data:/var/www/html
-      - static-site-data:/var/www/static-site
-      - adminer-data:/var/www/adminer
+
   redis:
     build: requirements/bonus/redis
     container_name: redis
     restart: always
-    env_file:
-      - .env
+    env_file: .env
     networks:
-      - inception-network
+      - inception
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
   ftp:
     build: requirements/bonus/ftp
     container_name: ftp
     restart: always
-    env_file:
-      - .env
-    depends_on:
-      - wordpress
+    env_file: .env
     ports:
       - "21:21"
-      - "21100-21110:21100-21110"
-    networks:
-      - inception-network
+      - "21000-21010:21000-21010"
     volumes:
-      - wordpress-data:/var/www/html
-  static-website:
-    build: requirements/bonus/static-website
-    container_name: static-website
-    restart: always
+      - wordpress_data:/var/www/html
+    networks:
+      - inception
     depends_on:
-      - nginx
       - wordpress
-    networks:
-      - inception-network
-    volumes:
-      - static-site-data:/var/www/static-site
-      
-  portainer:
-    build: requirements/bonus/portainer
-    container_name: portainer
-    restart: always
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer-data:/data
-    networks:
-      - inception-network
+    environment:
+      FTP_USER: ${FTP_USER}
+      FTP_PASSWORD: ${FTP_PASSWORD}
 
   adminer:
     build: requirements/bonus/adminer
     container_name: adminer
     restart: always
+    networks:
+      - inception
     depends_on:
       - mariadb
-    networks:
-      - inception-network
-    volumes:
-      - adminer-data:/var/www/adminer
 
-networks:
-  inception-network:
-    driver: bridge
+  static-website:
+    build: requirements/bonus/static-website
+    container_name: static-website
+    restart: always
+    networks:
+      - inception
+
+  portainer:
+    build: requirements/bonus/portainer
+    container_name: portainer
+    restart: always
+    ports:
+      - "9443:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - inception
 
 volumes:
-  mariadb-data:
+  mariadb_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /home/joker/data/mariadb
-  wordpress-data:
+  wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /home/joker/data/wordpress
-  static-site-data:
+  portainer_data:
     driver: local
-  adminer-data:
-    driver: local
-  portainer-data:
-    driver: local
+
+networks:
+  inception:
+    driver: bridge
 

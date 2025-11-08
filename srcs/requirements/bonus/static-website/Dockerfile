@@ -1,21 +1,20 @@
 FROM debian:bullseye
 
-# Install necessary packages
-RUN apt-get update -y && apt-get install -y \
-	curl && apt-get clean  && \
-	rm -rf /var/lib/apt/lists/*
+# Install Python for simple HTTP server
+RUN apt-get update && apt-get install -y \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create directory for website files
+# Create website directory
 RUN mkdir -p /var/www/static-site
 
 # Copy website files
-COPY ./website /var/www/static-site
+COPY website /var/www/static-site
 
-# Set working directory
 WORKDIR /var/www/static-site
 
-# Simple health check command
-HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 CMD ls -la /var/www/static-site/index.html || exit 1
+# Health check
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
+    CMD ls -la /var/www/static-site/index.html || exit 1
 
-# Keep container running
-CMD ["tail", "-f", "/dev/null"]
+CMD ["python3", "-m", "http.server", "8000"]

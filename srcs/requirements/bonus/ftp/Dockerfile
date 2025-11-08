@@ -1,14 +1,20 @@
 FROM debian:bullseye
 
-RUN apt update -y && apt upgrade -y \
-	&& apt install vsftpd -y && \
-	mkdir -p /var/run/vsftpd/empty
+# Install vsftpd
+RUN apt-get update && apt-get install -y \
+    vsftpd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create necessary directories
+RUN mkdir -p /var/run/vsftpd/empty /var/www/html \
+    && chown -R ftp:ftp /var/www/html
+
+# Copy configuration and setup script
+COPY conf/vsftpd.conf /etc/vsftpd.conf
+COPY tools/setup-ftp.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 21 21100-21110
 
-COPY ./conf/vsftpd.conf /etc/vsftpd.conf
-COPY tools/setup-ftp.sh /usr/local/bin/setup-ftp.sh
-RUN chmod +x /usr/local/bin/setup-ftp.sh
-
-ENTRYPOINT [ "/usr/local/bin/setup-ftp.sh" ]
-CMD [ "/usr/sbin/vsftpd", "/etc/vsftpd.conf" ]
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["/usr/sbin/vsftpd", "/etc/vsftpd.conf"]
